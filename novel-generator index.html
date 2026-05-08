@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NOVEL AI — 小説自動生成システム</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;700&family=DM+Sans:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #f7f4ef;
+    --surface: #ffffff;
+    --surface2: #f0ece4;
+    --border: #ddd8ce;
+    --accent: #8b6914;
+    --accent-light: #f5ead6;
+    --accent-btn: #c49a2a;
+    --text: #2a2218;
+    --text-dim: #8a7d6a;
+    --success: #3a7a56;
+    --danger: #c0392b;
+    --shadow: 0 2px 12px rgba(0,0,0,0.07);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #c49a2a, #8b6914, #c49a2a);
+    z-index: 100;
+  }
+
+  .container {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 56px 24px 80px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 52px;
+    animation: fadeDown 0.7s ease forwards;
+  }
+
+  .logo-badge {
+    display: inline-block;
+    background: var(--accent-light);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 6px 16px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+  }
+
+  h1 {
+    font-family: 'Noto Serif JP', serif;
+    font-size: clamp(26px, 4vw, 38px);
+    font-weight: 400;
+    color: var(--text);
+    line-height: 1.4;
+    margin-bottom: 12px;
+  }
+
+  h1 em { font-style: normal; color: var(--accent); }
+
+  .subtitle {
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.7;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .step-badge {
+    width: 28px; height: 28px;
+    background: var(--accent-light);
+    color: var(--accent);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 500; flex-shrink: 0;
+  }
+
+  .card-title { font-size: 15px; font-weight: 500; }
+  .card-desc { font-size: 13px; color: var(--text-dim); line-height: 1.7; margin-bottom: 20px; }
+
+  .field { margin-bottom: 18px; }
+
+  .field-label {
+    display: block;
+    font-size: 12px; font-weight: 500;
+    color: var(--text-dim);
+    margin-bottom: 7px;
+  }
+
+  input, textarea, select {
+    width: 100%;
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 12px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    resize: vertical;
+  }
+
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--accent-btn);
+    box-shadow: 0 0 0 3px rgba(196,154,42,0.12);
+  }
+
+  input::placeholder, textarea::placeholder { color: #bbb4a8; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  .chapter-item {
+    display: grid;
+    grid-template-columns: 52px 1fr 38px;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: start;
+  }
+
+  .chapter-num {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 11px; font-weight: 500;
+    color: var(--accent);
+    padding: 12px 4px;
+    text-align: center;
+    line-height: 1.3;
+  }
+
+  .remove-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-dim);
+    width: 38px; height: 44px;
+    cursor: pointer; font-size: 16px;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .remove-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+  .add-chapter-btn {
+    width: 100%;
+    background: var(--surface2);
+    border: 1.5px dashed var(--border);
+    border-radius: 8px;
+    color: var(--text-dim);
+    padding: 12px;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+    margin-top: 10px;
+  }
+
+  .add-chapter-btn:hover {
+    border-color: var(--accent-btn);
+    color: var(--accent);
+    background: var(--accent-light);
+  }
+
+  .auto-btn {
+    width: 100%;
+    background: var(--accent-light);
+    border: 1.5px solid #e0cc9a;
+    border-radius: 8px;
+    color: var(--accent);
+    padding: 13px;
+    cursor: pointer;
+    font-size: 13px; font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+    margin-bottom: 20px;
+  }
+
+  .auto-btn:hover:not(:disabled) { background: #f0dfa8; border-color: var(--accent-btn); }
+  .auto-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .generate-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #c49a2a, #8b6914);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 18px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px; font-weight: 500;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 16px rgba(139,105,20,0.3);
+  }
+
+  .generate-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(139,105,20,0.4);
+  }
+
+  .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .error-msg {
+    margin-top: 14px;
+    background: #fdf0ee;
+    border: 1px solid #f5c6c0;
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-size: 13px;
+    color: var(--danger);
+    line-height: 1.7;
+  }
+
+  .output-section { margin-top: 32px; animation: fadeUp 0.5s ease both; }
+
+  .progress-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+  }
+
+  .progress-label { font-size: 13px; color: var(--text-dim); margin-bottom: 12px; }
+
+  .progress-bar {
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #c49a2a, #8b6914);
+    border-radius: 99px;
+    transition: width 0.5s ease;
+  }
+
+  .chapter-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+
+  .tab {
+    font-size: 12px; font-weight: 500;
+    padding: 7px 16px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .tab:hover { border-color: var(--accent-btn); color: var(--accent); }
+  .tab.active { border-color: var(--accent-btn); color: var(--accent); background: var(--accent-light); }
+  .tab.done { border-color: #9ed4b8; color: var(--success); background: #f0faf5; }
+  .tab.active.done { border-color: var(--accent-btn); color: var(--accent); background: var(--accent-light); }
+  .tab.loading { border-color: var(--accent-btn); color: var(--accent); animation: pulse 1.2s infinite; }
+
+  .chapter-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 40px 44px;
+    box-shadow: var(--shadow);
+    min-height: 360px;
+    font-family: 'Noto Serif JP', serif;
+    font-size: 15px;
+    line-height: 2.4;
+    font-weight: 300;
+    white-space: pre-wrap;
+    color: var(--text);
+  }
+
+  .loading-state {
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .loading-dots { display: flex; gap: 7px; }
+
+  .dot {
+    width: 8px; height: 8px;
+    background: var(--accent-btn);
+    border-radius: 50%;
+    animation: bounce 1.2s infinite;
+  }
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+
+  .loading-label { font-size: 13px; color: var(--text-dim); }
+
+  .action-row { display: flex; gap: 10px; margin-top: 16px; }
+
+  .action-btn {
+    flex: 1;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-dim);
+    padding: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px; font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .action-btn:hover {
+    border-color: var(--accent-btn);
+    color: var(--accent);
+    background: var(--accent-light);
+  }
+
+  @keyframes fadeDown { from { opacity:0; transform:translateY(-16px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+  @keyframes bounce { 0%,80%,100% { transform:translateY(0); } 40% { transform:translateY(-8px); } }
+
+  @media (max-width: 600px) {
+    .grid-2 { grid-template-columns: 1fr; }
+    .chapter-card { padding: 24px 20px; }
+    .action-row { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="logo-badge">Novel AI System</div>
+    <h1>アイデアを渡すだけで、<br><em>小説が完成する。</em></h1>
+    <p class="subtitle">世界観とキャラクターを入力するだけ。あらすじも本文もAIが生成します。</p>
+  </header>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="step-badge">1</div>
+      <div class="card-title">APIキーを入力</div>
+    </div>
+    <p class="card-desc">Anthropic（Claude）のAPIキーを入力してください。キーはブラウザ内にのみ保存され、外部には送信されません。</p>
+    <div class="field">
+      <input type="password" id="apiKey" placeholder="sk-ant-api03-..." />
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="step-badge">2</div>
+      <div class="card-title">小説の基本設定</div>
+    </div>
+    <div class="field">
+      <label class="field-label">タイトル</label>
+      <input type="text" id="novelTitle" placeholder="例：Zシティ" />
+    </div>
+    <div class="field">
+      <label class="field-label">世界観・舞台設定</label>
+      <textarea id="worldSetting" rows="4" placeholder="例：AIが爆速で進化した近未来日本。65歳以上は全員Zシティという閉鎖都市に強制入居される。一度入ったら出られない。"></textarea>
+    </div>
+    <div class="field">
+      <label class="field-label">登場人物</label>
+      <textarea id="characters" rows="3" placeholder="例：田中湊（65歳・男性・元大企業部長・主人公）&#10;中村誠司（同期・突然連絡が途絶える）"></textarea>
+    </div>
+    <div class="field">
+      <label class="field-label">文体・スタイルのルール（任意）</label>
+      <textarea id="styleRules" rows="2" placeholder="例：動きのある場面は現在形。感情は地の文で説明せず行動と言葉で見せる。"></textarea>
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label class="field-label">ジャンル</label>
+        <input type="text" id="genre" placeholder="例：社会SF・ディストピア" />
+      </div>
+      <div class="field">
+        <label class="field-label">ターゲット読者</label>
+        <input type="text" id="target" placeholder="例：Z世代・20〜30代" />
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label class="field-label">総章数</label>
+        <select id="totalChapters" onchange="syncChapterCount()">
+          <option value="3">3章</option>
+          <option value="5">5章</option>
+          <option value="7">7章</option>
+          <option value="10" selected>10章</option>
+          <option value="12">12章</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">一章あたりの文字数</label>
+        <select id="chapterLength">
+          <option value="2000">短め — 約2,000字</option>
+          <option value="4000" selected>標準 — 約4,000字</option>
+          <option value="6000">長め — 約6,000字</option>
+          <option value="9000">詳細 — 約9,000字</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="step-badge">3</div>
+      <div class="card-title">章のあらすじ</div>
+    </div>
+    <p class="card-desc">あらすじはAIに自動生成させることができます。自分で書いても、AIに任せてもOKです。</p>
+    <button class="auto-btn" id="autoOutlineBtn" onclick="generateOutlines()">
+      ✦ あらすじをAIに自動生成させる
+    </button>
+    <div id="chapterList"></div>
+    <button class="add-chapter-btn" onclick="addChapter()">＋ 章を追加</button>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="step-badge">4</div>
+      <div class="card-title">小説を生成する</div>
+    </div>
+    <p class="card-desc">設定とあらすじが揃ったら生成を開始します。全章が順番に自動生成されます。</p>
+    <button class="generate-btn" id="generateBtn" onclick="startGeneration()">
+      小説を生成する →
+    </button>
+    <div id="errorMsg"></div>
+  </div>
+
+  <div class="output-section" id="outputSection" style="display:none;">
+    <div class="progress-wrap">
+      <div class="progress-label" id="progressLabel">生成中...</div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill" style="width:0%"></div>
+      </div>
+    </div>
+    <div class="chapter-tabs" id="chapterTabs"></div>
+    <div class="chapter-card" id="chapterContent"></div>
+    <div class="action-row">
+      <button class="action-btn" onclick="copyAll()">📋 全文をコピー</button>
+      <button class="action-btn" onclick="downloadTxt()">💾 テキストで保存</button>
+      <button class="action-btn" onclick="resetAll()">↩ やり直す</button>
+    </div>
+  </div>
+
+</div>
+<script>
+let chapters = [];
+let generatedChapters = {};
+let currentTab = 0;
+let isGenerating = false;
+
+window.onload = () => syncChapterCount();
+
+function syncChapterCount() {
+  const n = parseInt(document.getElementById('totalChapters').value);
+  while (chapters.length < n) chapters.push('');
+  while (chapters.length > n) chapters.pop();
+  renderChapterList();
+}
+
+function addChapter() {
+  chapters.push('');
+  renderChapterList();
+}
+
+function removeChapter(i) {
+  if (chapters.length <= 1) return;
+  chapters.splice(i, 1);
+  renderChapterList();
+}
+
+function renderChapterList() {
+  document.getElementById('chapterList').innerHTML = chapters.map((ch, i) => `
+    <div class="chapter-item">
+      <div class="chapter-num">第${i+1}章</div>
+      <textarea rows="2"
+        placeholder="例：主人公がZシティに到着し、初めて壁の存在を知る"
+        oninput="chapters[${i}] = this.value"
+      >${ch}</textarea>
+      <button class="remove-btn" onclick="removeChapter(${i})">×</button>
+    </div>
+  `).join('');
+}
+
+async function generateOutlines() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  const title = document.getElementById('novelTitle').value.trim();
+  const world = document.getElementById('worldSetting').value.trim();
+  const chars = document.getElementById('characters').value.trim();
+  const genre = document.getElementById('genre').value.trim();
+  const n = chapters.length;
+
+  document.getElementById('errorMsg').innerHTML = '';
+  if (!apiKey) return showError('APIキーを入力してください。');
+  if (!world) return showError('世界観を入力してください。');
+
+  const btn = document.getElementById('autoOutlineBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ あらすじを生成中...';
+
+  try {
+    const prompt = `以下の設定で${n}章構成の小説のあらすじを作成してください。
+
+タイトル：${title || '未定'}
+ジャンル：${genre || '未定'}
+世界観：${world}
+登場人物：${chars || '未定'}
+
+各章のあらすじを一行（40〜60字程度）で書いてください。
+以下のJSON形式のみで返してください。他の文章は一切不要です。
+
+{"outlines": ["第1章のあらすじ", "第2章のあらすじ"]}`;
+
+    const res = await callClaude(apiKey, 'あなたはプロの小説プロデューサーです。JSON形式のみで返答してください。', prompt);
+    const clean = res.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+    chapters = parsed.outlines.slice(0, n);
+    while (chapters.length < n) chapters.push('');
+    renderChapterList();
+  } catch(e) {
+    showError('あらすじの生成に失敗しました：' + e.message);
+  }
+
+  btn.disabled = false;
+  btn.textContent = '✦ あらすじをAIに自動生成させる';
+}
+
+function buildSystem() {
+  const title = document.getElementById('novelTitle').value;
+  const world = document.getElementById('worldSetting').value;
+  const chars = document.getElementById('characters').value;
+  const style = document.getElementById('styleRules').value;
+  const genre = document.getElementById('genre').value;
+  const target = document.getElementById('target').value;
+  const length = document.getElementById('chapterLength').value;
+
+  return `あなたはプロの小説家です。以下の設定に基づいて小説の章を執筆してください。
+
+【タイトル】${title}
+【ジャンル】${genre}
+【ターゲット読者】${target}
+【世界観】${world}
+【登場人物】${chars}
+【文体ルール】${style}
+
+執筆ルール：
+- 一章あたり約${length}字
+- 読み応えのある完結した内容
+- 次の章を読みたくなる終わり方
+- 場面と対話で物語を進める
+- 感情は行動と言葉で見せる
+
+章の本文のみを出力してください。`;
+}
+
+async function startGeneration() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  const world = document.getElementById('worldSetting').value.trim();
+  document.getElementById('errorMsg').innerHTML = '';
+
+  if (!apiKey) return showError('APIキーを入力してください。');
+  if (!world) return showError('世界観を入力してください。');
+  if (!chapters.some(c => c.trim())) return showError('章のあらすじを入力するか、AIに自動生成させてください。');
+
+  isGenerating = true;
+  generatedChapters = {};
+  currentTab = 0;
+
+  document.getElementById('generateBtn').disabled = true;
+  document.getElementById('autoOutlineBtn').disabled = true;
+  document.getElementById('outputSection').style.display = 'block';
+  document.getElementById('outputSection').scrollIntoView({ behavior: 'smooth' });
+
+  const system = buildSystem();
+  const prevSummaries = [];
+
+  for (let i = 0; i < chapters.length; i++) {
+    if (!chapters[i].trim()) continue;
+    currentTab = i;
+    renderTabs();
+    showLoading(i);
+    updateProgress(i, chapters.length, `第${i+1}章を生成中...`);
+
+    try {
+      let context = prevSummaries.length > 0
+        ? `【前の章のあらすじ】\n${prevSummaries.map((s,j) => `第${j+1}章：${s}`).join('\n')}\n\n`
+        : '';
+      const user = `${context}【今回書く章】\n第${i+1}章（全${chapters.length}章中）\n\n【この章のあらすじ】\n${chapters[i]}\n\n第${i+1}章の本文を書いてください。`;
+      const text = await callClaude(apiKey, system, user);
+      generatedChapters[i] = text;
+      prevSummaries.push(chapters[i]);
+      showChapterText(text);
+      renderTabs();
+    } catch(e) {
+      showError(`第${i+1}章の生成でエラーが発生しました：${e.message}`);
+      break;
+    }
+  }
+
+  updateProgress(chapters.length, chapters.length, '生成完了 ✓');
+  document.getElementById('generateBtn').disabled = false;
+  document.getElementById('autoOutlineBtn').disabled = false;
+  isGenerating = false;
+}
+
+async function callClaude(apiKey, system, user) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-5-20250929',
+      max_tokens: 4096,
+      system,
+      messages: [{ role: 'user', content: user }]
+    })
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error?.message || `APIエラー (${res.status})`);
+  }
+  const data = await res.json();
+  return data.content[0].text;
+}
+
+function renderTabs() {
+  document.getElementById('chapterTabs').innerHTML = chapters.map((ch, i) => {
+    if (!ch.trim()) return '';
+    const isDone = !!generatedChapters[i];
+    const isLoad = isGenerating && currentTab === i && !isDone;
+    let cls = isLoad ? 'loading' : isDone ? 'done' : '';
+    if (currentTab === i) cls += ' active';
+    return `<button class="tab ${cls}" onclick="switchTab(${i})">第${i+1}章</button>`;
+  }).join('');
+}
+
+function switchTab(i) {
+  if (!generatedChapters[i]) return;
+  currentTab = i;
+  renderTabs();
+  showChapterText(generatedChapters[i]);
+}
+
+function showLoading(i) {
+  document.getElementById('chapterContent').innerHTML = `
+    <div class="loading-state">
+      <div class="loading-dots">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      </div>
+      <div class="loading-label">第${i+1}章を執筆中...</div>
+    </div>`;
+}
+
+function showChapterText(text) {
+  document.getElementById('chapterContent').textContent = text;
+}
+
+function updateProgress(done, total, label) {
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = label || `${pct}%`;
+}
+
+function showError(msg) {
+  document.getElementById('errorMsg').innerHTML = `<div class="error-msg">${msg}</div>`;
+}
+
+function copyAll() {
+  const title = document.getElementById('novelTitle').value || '小説';
+  let all = `${title}\n\n`;
+  chapters.forEach((ch, i) => {
+    if (generatedChapters[i]) all += `第${i+1}章\n\n${generatedChapters[i]}\n\n───\n\n`;
+  });
+  navigator.clipboard.writeText(all).then(() => {
+    const btn = event.target;
+    btn.textContent = '✓ コピーしました';
+    setTimeout(() => btn.textContent = '📋 全文をコピー', 2000);
+  });
+}
+
+function downloadTxt() {
+  const title = document.getElementById('novelTitle').value || '小説';
+  let all = `${title}\n\n`;
+  chapters.forEach((ch, i) => {
+    if (generatedChapters[i]) all += `第${i+1}章\n\n${generatedChapters[i]}\n\n───\n\n`;
+  });
+  const blob = new Blob([all], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${title}.txt`;
+  a.click();
+}
+
+function resetAll() {
+  if (isGenerating) return;
+  generatedChapters = {};
+  currentTab = 0;
+  document.getElementById('outputSection').style.display = 'none';
+  document.getElementById('progressFill').style.width = '0%';
+  document.getElementById('errorMsg').innerHTML = '';
+}
+</script>
+</body>
+</html>
